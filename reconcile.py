@@ -37,3 +37,12 @@ def generate_sample_ledgers():
     bank_statement.to_csv('data/bank_statement.csv', index=False)
 
     print("Sample ledgers 'internal_ledger.csv' and 'bank_statement.csv' created in 'data/' folder.\n")
+
+def reconcile():
+    print("Loading and pre-processing data...")
+    try:
+        internal_df = pd.read_csv('data/internal_ledger.csv')
+        bank_df = pd.read_csv('data/bank_statement.csv')
+    except FileNotFoundError:
+        print("Error: CSV files not found. Please run generate_sample_ledgers() first.")
+        return
