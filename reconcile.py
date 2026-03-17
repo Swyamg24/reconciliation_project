@@ -20,3 +20,20 @@ def generate_sample_ledgers():
             'Amount':round(random.uniform(10.50,500.99),2)
         })
     base_df = pd.DataFrame(data)
+    internal_ledger = base_df.iloc[:105].copy()
+    bank_statement = base_df.iloc[:100].copy()
+    bank_statement = pd.concat([bank_statement, base_df.iloc[105:]], ignore_index=True)
+    mismatch_indices = random.sample(range(100), 3)
+    for idx in mismatch_indices:
+        bank_statement.loc[idx, 'Amount'] += round(random.uniform(0.01, 1.50), 2)
+
+    duplicate_indices = random.sample(range(100), 2)
+    duplicates = bank_statement.iloc[duplicate_indices]
+    bank_statement = pd.concat([bank_statement, duplicates], ignore_index=True)
+
+    bank_statement = bank_statement.sample(frac=1).reset_index(drop=True)
+
+    internal_ledger.to_csv('data/internal_ledger.csv', index=False)
+    bank_statement.to_csv('data/bank_statement.csv', index=False)
+
+    print("Sample ledgers 'internal_ledger.csv' and 'bank_statement.csv' created in 'data/' folder.\n")
