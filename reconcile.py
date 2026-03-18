@@ -77,4 +77,13 @@ def reconcile():
 
     print("Reconciliation complete.\n")
 
-    
+    print("Reconciliation Report")
+    print("=====================")
+    print(f"Total Transactions in Internal Ledger: {len(internal_df)}")
+    print(f"Total Transactions in Bank Statement: {len(bank_df)}")
+    print("\nDiscrepancies Found:")
+    print("--------------------")
+    print(f"- {len(missing_from_bank_df)} transactions missing from Bank Statement.")
+    print(f"- {len(missing_from_internal_df)} transactions in Bank Statement not found in Internal Ledger.")
+    print(f"- {len(mismatched_amounts_df)} transactions with mismatched amounts.")
+    print(f"- {int(len(duplicates_in_bank_df)/2)} duplicate transactions found in Bank Statement.") # Divided by 2 because we mark both rows
