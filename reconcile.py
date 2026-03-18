@@ -57,3 +57,24 @@ def reconcile():
     bank_df.dropna(how='all', inplace=True)
     
     print("Data loaded successfully.")
+
+    print("Performing reconciliation...")
+
+    internal_ids = set(internal_df['TransactionID'])
+    bank_ids = set(bank_df['TransactionID'])
+
+    missing_from_bank_ids = internal_ids - bank_ids
+    missing_from_bank_df = internal_df[internal_df['TransactionID'].isin(missing_from_bank_ids)]
+
+    missing_from_internal_ids = bank_ids - internal_ids
+    missing_from_internal_df = bank_df[bank_df['TransactionID'].isin(missing_from_internal_ids)]
+
+    merged_df = pd.merge(internal_df, bank_df, on='TransactionID', how='inner', suffixes=('_internal', '_bank'))
+
+    mismatched_amounts_df = merged_df[~np.isclose(merged_df['Amount_internal'], merged_df['Amount_bank'])]
+
+    duplicates_in_bank_df = bank_df[bank_df.duplicated(subset=['TransactionID'], keep=False)].sort_values('TransactionID')
+
+    print("Reconciliation complete.\n")
+
+    
