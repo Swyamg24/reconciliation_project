@@ -46,3 +46,14 @@ def reconcile():
     except FileNotFoundError:
         print("Error: CSV files not found. Please run generate_sample_ledgers() first.")
         return
+    
+    internal_df['Date'] = pd.to_datetime(internal_df['Date'])
+    bank_df['Date'] = pd.to_datetime(bank_df['Date'])
+    
+    internal_df['Amount'] = pd.to_numeric(internal_df['Amount'])
+    bank_df['Amount'] = pd.to_numeric(bank_df['Amount'])
+
+    internal_df.dropna(how='all', inplace=True)
+    bank_df.dropna(how='all', inplace=True)
+    
+    print("Data loaded successfully.")
