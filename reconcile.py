@@ -86,4 +86,18 @@ def reconcile():
     print(f"- {len(missing_from_bank_df)} transactions missing from Bank Statement.")
     print(f"- {len(missing_from_internal_df)} transactions in Bank Statement not found in Internal Ledger.")
     print(f"- {len(mismatched_amounts_df)} transactions with mismatched amounts.")
-    print(f"- {int(len(duplicates_in_bank_df)/2)} duplicate transactions found in Bank Statement.") # Divided by 2 because we mark both rows
+    print(f"- {int(len(duplicates_in_bank_df)/2)} duplicate transactions found in Bank Statement.") 
+
+    report_filename = 'reconciliation_report.xlsx'
+    print(f"\nGenerating Excel report: {report_filename}...")
+    with pd.ExcelWriter(report_filename, engine='xlsxwriter') as writer:
+        missing_from_bank_df.to_excel(writer, sheet_name='Missing_from_Bank', index=False)
+        missing_from_internal_df.to_excel(writer, sheet_name='Missing_from_Internal', index=False)
+        mismatched_amounts_df.to_excel(writer, sheet_name='Mismatched_Amounts', index=False)
+        duplicates_in_bank_df.to_excel(writer, sheet_name='Duplicates_in_Bank', index=False)
+
+        print("Report generated successfully.")
+
+if __name__ == "__main__":
+    generate_sample_ledgers()
+    reconcile()
