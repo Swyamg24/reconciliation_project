@@ -1,30 +1,385 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Financial Data Analysis</title>
+    <title>FinLedger — Reconciliation Engine</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #080c10;
+            --surface: #0e1318;
+            --border: #1c2530;
+            --accent: #00e5a0;
+            --accent-dim: rgba(0, 229, 160, 0.12);
+            --accent-glow: rgba(0, 229, 160, 0.35);
+            --text: #e8edf2;
+            --muted: #5a6a7a;
+            --danger: #ff4d6d;
+            --warn: #ffc845;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Radial glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(ellipse at center, rgba(0,229,160,0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 560px;
+            animation: fadeUp 0.7s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 2.5rem;
+            animation: fadeUp 0.7s 0.1s ease both;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border: 1.5px solid var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .logo-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; }
+
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text);
+        }
+
+        .logo-text span { color: var(--accent); }
+
+        .header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.9rem, 5vw, 2.6rem);
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+        }
+
+        .header h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .header p {
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.7;
+            letter-spacing: 0.02em;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            animation: fadeUp 0.7s 0.15s ease both;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            animation: fadeUp 0.7s 0.2s ease both;
+        }
+
+        /* Upload zones */
+        .upload-group { margin-bottom: 1.25rem; }
+
+        .upload-label {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-zone {
+            position: relative;
+            border: 1.5px dashed var(--border);
+            border-radius: 10px;
+            padding: 1.2rem 1.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: transparent;
+        }
+
+        .upload-zone:hover, .upload-zone.has-file {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            box-shadow: 0 0 20px rgba(0,229,160,0.08);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,229,160,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .upload-zone:hover .upload-icon { background: rgba(0,229,160,0.2); }
+        .upload-icon svg { width: 16px; height: 16px; stroke: var(--accent); fill: none; }
+
+        .upload-text { flex: 1; }
+        .upload-title {
+            font-size: 0.82rem;
+            color: var(--text);
+            font-weight: 400;
+            margin-bottom: 0.1rem;
+        }
+        .upload-hint {
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.03em;
+        }
+
+        .file-badge {
+            font-size: 0.65rem;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid rgba(0,229,160,0.25);
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .upload-zone.has-file .file-badge { display: block; }
+        .upload-zone.has-file .upload-hint { display: none; }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: var(--muted);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Submit button */
+        .btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--accent);
+            color: #060a0d;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.2s, box-shadow 0.2s, transform 0.15s;
+            box-shadow: 0 0 24px var(--accent-glow);
+            margin-top: 1.5rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 36px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn:active { transform: translateY(0); }
+
+        /* Footer note */
+        .footnote {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+            animation: fadeUp 0.7s 0.3s ease both;
+        }
+    </style>
 </head>
 <body>
-    <h2>Upload Your Financial Records</h2>
+    <div class="wrapper">
 
-    <form action="/calculate" method="POST" enctype="multipart/form-data">
-        
-        <div>
-            <label for="ledger">Upload Internal Ledger (CSV):</label>
-            <input type="file" id="ledger" name="internal_ledger" accept=".csv" required>
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <span class="logo-text">Fin<span>Ledger</span></span>
+            </div>
+            <h1>Reconciliation<br><em>Engine</em></h1>
+            <p>Upload your internal ledger and bank statement to detect discrepancies, missing entries, and duplicate transactions.</p>
         </div>
-        
-        <br>
 
-        <div>
-            <label for="bank">Upload Bank Statement (CSV):</label>
-            <input type="file" id="bank" name="bank_statement" accept=".csv" required>
+        <div class="status-bar">
+            <div class="status-dot"></div>
+            System ready — awaiting input
         </div>
-        
-        <br>
 
-        <button type="submit">Run Analysis</button>
-    
-    </form>
+        <div class="card">
+            <form action="/calculate" method="POST" enctype="multipart/form-data">
 
+                <div class="upload-group">
+                    <label class="upload-label">01 — Internal Ledger</label>
+                    <div class="upload-zone" id="zone-ledger">
+                        <input type="file" name="internal_ledger" accept=".csv" required
+                               onchange="handleFile(this, 'zone-ledger', 'badge-ledger')">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                        <div class="upload-text">
+                            <div class="upload-title">Drop internal_ledger.csv</div>
+                            <div class="upload-hint">CSV · UTF-8 · max 50MB</div>
+                        </div>
+                        <span class="file-badge" id="badge-ledger">FILE READY</span>
+                    </div>
+                </div>
+
+                <div class="upload-group">
+                    <label class="upload-label">02 — Bank Statement</label>
+                    <div class="upload-zone" id="zone-bank">
+                        <input type="file" name="bank_statement" accept=".csv" required
+                               onchange="handleFile(this, 'zone-bank', 'badge-bank')">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        </div>
+                        <div class="upload-text">
+                            <div class="upload-title">Drop bank_statement.csv</div>
+                            <div class="upload-hint">CSV · UTF-8 · max 50MB</div>
+                        </div>
+                        <span class="file-badge" id="badge-bank">FILE READY</span>
+                    </div>
+                </div>
+
+                <div class="divider">ready to process</div>
+
+                <button type="submit" class="btn">Run Analysis →</button>
+            </form>
+        </div>
+
+        <p class="footnote">All processing happens locally on your server. No data is stored or transmitted externally.</p>
+    </div>
+
+    <script>
+        function handleFile(input, zoneId, badgeId) {
+            const zone = document.getElementById(zoneId);
+            const badge = document.getElementById(badgeId);
+            if (input.files && input.files[0]) {
+                const name = input.files[0].name.replace(/(.{14}).+(\..+)$/, '$1…$2');
+                badge.textContent = name.toUpperCase();
+                zone.classList.add('has-file');
+            }
+        }
+    </script>
 </body>
 </html>
