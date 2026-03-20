@@ -1,29 +1,455 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Analysis Result</title>
+    <title>FinLedger — Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #080c10;
+            --surface: #0e1318;
+            --surface2: #111820;
+            --border: #1c2530;
+            --accent: #00e5a0;
+            --accent-dim: rgba(0, 229, 160, 0.10);
+            --accent-glow: rgba(0, 229, 160, 0.35);
+            --text: #e8edf2;
+            --muted: #5a6a7a;
+            --danger: #ff4d6d;
+            --danger-dim: rgba(255, 77, 109, 0.10);
+            --warn: #ffc845;
+            --warn-dim: rgba(255, 200, 69, 0.10);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,229,160,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,160,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse at center, rgba(0,229,160,0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .animate { animation: fadeUp 0.6s ease both; }
+        .d1 { animation-delay: 0.05s; }
+        .d2 { animation-delay: 0.12s; }
+        .d3 { animation-delay: 0.2s; }
+        .d4 { animation-delay: 0.28s; }
+        .d5 { animation-delay: 0.36s; }
+        .d6 { animation-delay: 0.44s; }
+
+        /* Header */
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        .logo-icon {
+            width: 36px; height: 36px;
+            border: 1.5px solid var(--accent);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+        .logo-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; }
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem; font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+        .logo-text span { color: var(--accent); }
+
+        .header-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.7rem, 4vw, 2.2rem);
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .header h1 em { font-style: normal; color: var(--accent); }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(0,229,160,0.1);
+            border: 1px solid rgba(0,229,160,0.25);
+            border-radius: 100px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.65rem;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 0.3rem;
+        }
+        .status-pill::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px var(--accent);
+        }
+
+        /* Summary row */
+        .summary-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .summary-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem 1.4rem;
+        }
+
+        .summary-card .label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .summary-card .value {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            animation: countUp 0.5s ease both;
+        }
+
+        .summary-card .sub {
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Section heading */
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.85rem;
+        }
+        .section-heading::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Discrepancy cards */
+        .discrepancy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .disc-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem 1.4rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .disc-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+
+        .disc-card.red { border-color: rgba(255,77,109,0.2); }
+        .disc-card.red::before { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
+        .disc-card.red .disc-value { color: var(--danger); }
+        .disc-card.red .disc-icon svg { stroke: var(--danger); }
+        .disc-card.red .disc-icon { background: var(--danger-dim); border-color: rgba(255,77,109,0.2); }
+
+        .disc-card.yellow { border-color: rgba(255,200,69,0.2); }
+        .disc-card.yellow::before { background: var(--warn); box-shadow: 0 0 12px var(--warn); }
+        .disc-card.yellow .disc-value { color: var(--warn); }
+        .disc-card.yellow .disc-icon svg { stroke: var(--warn); }
+        .disc-card.yellow .disc-icon { background: var(--warn-dim); border-color: rgba(255,200,69,0.2); }
+
+        .disc-card.green { border-color: rgba(0,229,160,0.2); }
+        .disc-card.green::before { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+        .disc-card.green .disc-value { color: var(--accent); }
+        .disc-card.green .disc-icon svg { stroke: var(--accent); }
+        .disc-card.green .disc-icon { background: var(--accent-dim); border-color: rgba(0,229,160,0.2); }
+
+        .disc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .disc-icon {
+            width: 30px; height: 30px;
+            border-radius: 7px;
+            border: 1px solid;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .disc-icon svg { width: 14px; height: 14px; fill: none; stroke-width: 2; }
+
+        .disc-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            animation: countUp 0.6s ease both;
+        }
+
+        .disc-label {
+            font-size: 0.7rem;
+            color: var(--text);
+            line-height: 1.4;
+            margin-top: 0.4rem;
+        }
+
+        .disc-sub {
+            font-size: 0.63rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Action row */
+        .action-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary {
+            flex: 1;
+            padding: 0.85rem;
+            background: var(--accent);
+            color: #060a0d;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s, box-shadow 0.2s, transform 0.15s;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .btn-primary:hover {
+            opacity: 0.88;
+            transform: translateY(-1px);
+            box-shadow: 0 0 32px var(--accent-glow);
+        }
+
+        .btn-ghost {
+            padding: 0.85rem 1.2rem;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+        /* Timestamp */
+        .timestamp {
+            text-align: center;
+            font-size: 0.62rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .summary-row, .discrepancy-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-    <h2>Data Successfully Processed!</h2>
+    <div class="wrapper">
 
-    <p>We read your files successfully. Here is the summary:</p>
-    <ul>
-        <li><strong>Internal Ledger:</strong> {{ ledger_count }} transactions found.</li>
-        <li><strong>Bank Statement:</strong> {{ bank_count }} transactions found.</li>
-    </ul>
+        <div class="header animate d1">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <span class="logo-text">Fin<span>Ledger</span></span>
+            </div>
+            <div class="header-top">
+                <h1>Reconciliation<br><em>Report</em></h1>
+                <div class="status-pill">Analysis Complete</div>
+            </div>
+        </div>
 
-    <h2>Reconciliation Report</h2>
-    <p><strong>Total Transactions in Internal Ledger:</strong> {{ ledger_count }}</p>
-    <p><strong>Total Transactions in Bank Statement:</strong> {{ bank_count }}</p>
+        <!-- Summary -->
+        <div class="section-heading animate d2">Transaction Summary</div>
+        <div class="summary-row animate d2">
+            <div class="summary-card">
+                <div class="label">Internal Ledger</div>
+                <div class="value">{{ ledger_count }}</div>
+                <div class="sub">transactions found</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Bank Statement</div>
+                <div class="value">{{ bank_count }}</div>
+                <div class="sub">transactions found</div>
+            </div>
+        </div>
 
-    <h3>Discrepancies Found</h3>
-    <ul>
-        <li>{{ missing_from_bank }} transactions missing from Bank Statement.</li>
-        <li>{{ missing_from_internal }} transactions in Bank Statement not found in Internal Ledger.</li>
-        <li>{{ mismatched_amounts }} transactions with mismatched amounts.</li>
-        <li>{{ duplicates_in_bank }} duplicate transactions found in Bank Statement.</li>
-    </ul>
+        <!-- Discrepancies -->
+        <div class="section-heading animate d3">Discrepancies Detected</div>
+        <div class="discrepancy-grid">
 
-    <a href="/">Run another analysis</a>
+            <div class="disc-card red animate d3">
+                <div class="disc-header">
+                    <div class="disc-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                </div>
+                <div class="disc-value">{{ missing_from_bank }}</div>
+                <div class="disc-label">Missing from Bank</div>
+                <div class="disc-sub">Ledger entries not in statement</div>
+            </div>
+
+            <div class="disc-card red animate d4">
+                <div class="disc-header">
+                    <div class="disc-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                </div>
+                <div class="disc-value">{{ missing_from_internal }}</div>
+                <div class="disc-label">Not in Ledger</div>
+                <div class="disc-sub">Bank entries with no match</div>
+            </div>
+
+            <div class="disc-card yellow animate d5">
+                <div class="disc-header">
+                    <div class="disc-icon">
+                        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                </div>
+                <div class="disc-value">{{ mismatched_amounts }}</div>
+                <div class="disc-label">Amount Mismatch</div>
+                <div class="disc-sub">Same ID, different values</div>
+            </div>
+
+            <div class="disc-card green animate d6">
+                <div class="disc-header">
+                    <div class="disc-icon">
+                        <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                    </div>
+                </div>
+                <div class="disc-value">{{ duplicates_in_bank }}</div>
+                <div class="disc-label">Duplicates in Bank</div>
+                <div class="disc-sub">Repeated transaction IDs</div>
+            </div>
+
+        </div>
+
+        <!-- Actions -->
+        <div class="action-row animate d6">
+            <a href="/" class="btn-primary">← Run New Analysis</a>
+            <a href="#" class="btn-ghost" onclick="window.print(); return false;">Print</a>
+        </div>
+
+        <div class="timestamp animate d6" id="ts"></div>
+    </div>
+
+    <script>
+        const ts = document.getElementById('ts');
+        ts.textContent = 'Generated: ' + new Date().toLocaleString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }).toUpperCase();
+    </script>
 </body>
 </html>
