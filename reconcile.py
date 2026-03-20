@@ -90,7 +90,7 @@ def reconcile():
 
     report_filename = 'reconciliation_report.xlsx'
     print(f"\nGenerating Excel report: {report_filename}...")
-    with pd.ExcelWriter(report_filename, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(report_filename, engine='openpyxl') as writer:
         missing_from_bank_df.to_excel(writer, sheet_name='Missing_from_Bank', index=False)
         missing_from_internal_df.to_excel(writer, sheet_name='Missing_from_Internal', index=False)
         mismatched_amounts_df.to_excel(writer, sheet_name='Mismatched_Amounts', index=False)
