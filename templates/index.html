@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Data Analysis</title>
+</head>
+<body>
+    <h2>Upload Your Financial Records</h2>
+
+    <form action="/calculate" method="POST" enctype="multipart/form-data">
+        
+        <div>
+            <label for="ledger">Upload Internal Ledger (CSV):</label>
+            <input type="file" id="ledger" name="internal_ledger" accept=".csv" required>
+        </div>
+        
+        <br>
+
+        <div>
+            <label for="bank">Upload Bank Statement (CSV):</label>
+            <input type="file" id="bank" name="bank_statement" accept=".csv" required>
+        </div>
+        
+        <br>
+
+        <button type="submit">Run Analysis</button>
+    
+    </form>
+
+</body>
+</html>

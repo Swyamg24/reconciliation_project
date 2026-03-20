@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Result</title>
+</head>
+<body>
+    <h2>Data Successfully Processed!</h2>
+
+    <p>We read your files successfully. Here is the summary:</p>
+    <ul>
+        <li><strong>Internal Ledger:</strong> {{ ledger_count }} transactions found.</li>
+        <li><strong>Bank Statement:</strong> {{ bank_count }} transactions found.</li>
+    </ul>
+
+    <h2>Reconciliation Report</h2>
+    <p><strong>Total Transactions in Internal Ledger:</strong> {{ ledger_count }}</p>
+    <p><strong>Total Transactions in Bank Statement:</strong> {{ bank_count }}</p>
+
+    <h3>Discrepancies Found</h3>
+    <ul>
+        <li>{{ missing_from_bank }} transactions missing from Bank Statement.</li>
+        <li>{{ missing_from_internal }} transactions in Bank Statement not found in Internal Ledger.</li>
+        <li>{{ mismatched_amounts }} transactions with mismatched amounts.</li>
+        <li>{{ duplicates_in_bank }} duplicate transactions found in Bank Statement.</li>
+    </ul>
+
+    <a href="/">Run another analysis</a>
+</body>
+</html>
