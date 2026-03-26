@@ -340,6 +340,34 @@
         }
         .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
 
+        .btn-download {
+            flex: 1;
+            padding: 0.85rem;
+            background: transparent;
+            color: var(--accent);
+            border: 1.5px solid var(--accent);
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+        }
+        .btn-download:hover {
+            background: var(--accent-dim);
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        a[href="/download"] {
+            flex: 1;
+            display: flex;
+            text-decoration: none;
+        }
+
         /* Timestamp */
         .timestamp {
             text-align: center;
@@ -438,6 +466,9 @@
         <!-- Actions -->
         <div class="action-row animate d6">
             <a href="/" class="btn-primary">← Run New Analysis</a>
+            <a href="/download">
+                <button class="btn-download">Download Excel Report</button>
+            </a>
             <a href="#" class="btn-ghost" onclick="window.print(); return false;">Print</a>
         </div>
 
